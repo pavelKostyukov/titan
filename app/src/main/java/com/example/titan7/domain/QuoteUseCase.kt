@@ -1,7 +1,8 @@
 package com.example.titan7.domain
 
-import com.example.titan7.data.QuoteRepository
+import com.example.titan7.data.QuoteRepositoryImpl
 
-class QuoteUseCase(private val repository: QuoteRepository) {
-    fun getQuotes() = repository.getQuotes()
+class QuoteUseCase(private val repository: QuoteRepositoryImpl) {
+   // fun getQuotes() = repository.getQuotes()
+
 }

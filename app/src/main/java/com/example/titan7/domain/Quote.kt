@@ -2,9 +2,9 @@ package com.example.titan7.domain
 
 data class Quote(
     val ticker: String,
-    val changePercent: Double,
-    val exchange: String,
-    val name: String,
-    val lastPrice: Double,
-    val changePrice: Double
+    val changePercent: Double? = 0.00,
+    val exchange: String? = "",
+    val name: String?= "",
+    val lastPrice: Double? = 0.00,
+    val changePrice: Double = 0.00
 )
