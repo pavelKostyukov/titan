@@ -77,6 +77,7 @@ dependencies {
     implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
     implementation ("androidx.activity:activity-compose:1.7.1")
     implementation (libs.websocket.okhttp)
+    implementation ("com.google.code.gson:gson:2.11.0")
     implementation (libs.stomp.core)
     implementation (libs.stomp.kxserialization)
     implementation (libs.koin.core)

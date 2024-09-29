@@ -12,7 +12,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.titan7.domain.Quote
+import com.example.titan7.data.Quote
+import com.example.titan7.data.WebResponse
+import com.example.titan7.domain.Listing
 
 @Composable
 fun QuoteItem(quote: Quote) {
@@ -24,13 +26,13 @@ fun QuoteItem(quote: Quote) {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Column {
-            Text(text = quote.ticker, fontSize = 20.sp)
-            quote.name?.let { Text(text = it, fontSize = 14.sp) }
+            Text(text = quote.symbol, fontSize = 20.sp)
+            Text(text = quote.exchange, fontSize = 14.sp)
         }
         Text(
-            text = "${quote.lastPrice} (${quote.changePercent}%)",
+            text = "${quote.price} (${quote.price}%)",
             fontSize = 16.sp,
-            color = if (quote.changePercent!! >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+            color = if (quote.price >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
         )
     }
 }

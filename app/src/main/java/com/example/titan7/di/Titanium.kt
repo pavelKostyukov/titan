@@ -15,5 +15,5 @@ val TitanModule = module {
         }
     }
     single<StompClient> { StompClient(OkHttpWebSocketClient(get())) }
-    single<QuoteRepository> { QuoteRepositoryImpl(get(), get()) }
+    single<QuoteRepository> { QuoteRepositoryImpl(/*get(), get()*/) }
 }

@@ -1,6 +1,6 @@
 package com.example.titan7.domain
 
-data class Quote(
+data class Listing(
     val ticker: String,
     val changePercent: Double? = 0.00,
     val exchange: String? = "",
