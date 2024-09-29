@@ -1,7 +1,6 @@
 package com.example.titan7.data
 
 import android.util.Log
-import com.example.titan7.domain.Listing
 import com.example.titan7.domain.QuoteRepository
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -15,18 +14,13 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
-import java.util.concurrent.TimeUnit
 
-open class QuoteRepositoryImpl() : QuoteRepository {
-    private val client = OkHttpClient.Builder()
-        .readTimeout(2000, TimeUnit.MILLISECONDS)
-        .build()
+
+open class QuoteRepositoryImpl(private val okHttpClient: OkHttpClient) : QuoteRepository {
     private val gson = Gson()
+    private val datList = mutableListOf<Quote>()
     private val webSocketUrl = "wss://wss.tradernet.com"
-    private val tickersToWatchChanges = listOf("AFLT", "AAPL.US","SP500.IDX")
-
-    // Сохраним текущие котировки
-    private val currentQuotes = mutableListOf<Listing>()
+    private val tickersToWatchChanges = listOf("AFLT", "AAPL.US", "SP500.IDX", "AAPL.US")
 
     /**
      * Получаем котировки
@@ -34,13 +28,7 @@ open class QuoteRepositoryImpl() : QuoteRepository {
      */
     private val dataValue = MutableStateFlow<List<Quote>>(listOf())
 
-    /*
-        suspend fun getQuotes(): Flow<List<Quote>> {
-
-        }
-    */
-
-    private fun startWebSocket(/*listener: (List<Quote>) -> Unit*/) {
+    private fun startWebSocket() {
         val request = Request.Builder().url(webSocketUrl).build()
         val webSocketListener = object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
@@ -58,7 +46,7 @@ open class QuoteRepositoryImpl() : QuoteRepository {
                     val event = jelement[0].asString
                     if (event == "q") {
                         val data = jelement[1]
-                        handleQuoteUpdate(data/*, listener*/)
+                        handleQuoteUpdate(data)
                     }
                 }
             }
@@ -72,26 +60,18 @@ open class QuoteRepositoryImpl() : QuoteRepository {
             }
         }
 
-        client.newWebSocket(request, webSocketListener)
+        okHttpClient.newWebSocket(request, webSocketListener)
     }
 
-    private fun handleQuoteUpdate(data: JsonElement/*, listener: (List<Quote>) -> Unit*/) {
+    private fun handleQuoteUpdate(data: JsonElement) {
         // Извлекаем данные из JSON объекта и преобразуем их в WebResponse
         val response = gson.fromJson(data, WebResponse::class.java)
+        Log.d("WebSocket", "Connection closed: $response")
 
         // Создаем список Quote из данных WebResponse
-
-         val mapping =    Quote(
-                symbol = response.quoteBasis,          // Символ
-                price = response.chg,            // Текущая цена
-                change = response.ltp,          // Изменение цены
-                previousClose = response.p22, // Цена закрытия
-                exchange = response.bbt        // Биржа
-            )
-        // Обновляем значение.
-   //     dataValue.value = mapping
+        datList.add(response.mapToListing())
+        dataValue.value = datList
     }
-
 
     override suspend fun startSocket() {
         startWebSocket()
