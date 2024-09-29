@@ -2,6 +2,7 @@ package com.example.titan7.presentation.ui
 
 
 
+import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -16,7 +17,8 @@ import com.example.titan7.presentation.QuoteViewModel
 @Composable
 fun QuoteListScreen(viewModel: QuoteViewModel) {
     val quotes by viewModel.quotes.collectAsState()
-
+    // Логируем количество цитат
+    Log.d("QuoteListScreen", "Количество цитат: ${quotes.size}")
     Column(modifier = Modifier.padding(16.dp)) {
         quotes.forEach { quote ->
             QuoteItem(quote)
