@@ -68,7 +68,7 @@ open class QuoteRepositoryImpl(private val okHttpClient: OkHttpClient) : QuoteRe
      * Получаем котировки
      * Подписываемся на веб-сокет и возвращаем поток котировок.
      */
-    private val dataValue = MutableStateFlow<List<Listing>>(listOf())
+    var dataValue = MutableStateFlow<List<Listing>>(listOf())
 
     private fun startWebSocket() {
         val request = Request.Builder().url(webSocketUrl).build()
@@ -109,7 +109,7 @@ open class QuoteRepositoryImpl(private val okHttpClient: OkHttpClient) : QuoteRe
     }
 
     // Зависимость от контекста корутин
-    private suspend fun handleQuoteUpdate(data: JsonElement) {
+    suspend fun handleQuoteUpdate(data: JsonElement) {
         // Извлекаем данные из JSON объекта и преобразуем их в WebResponse
         val response = gson.fromJson(data, WebResponse::class.java)
         Log.d("WebSocket", "Received quote: $response")
