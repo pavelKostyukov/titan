@@ -18,7 +18,6 @@ import com.example.titan7.presentation.QuoteViewModel
 @Composable
 fun QuoteListScreen(viewModel: QuoteViewModel) {
     val quotes by viewModel.quotes.collectAsState()
-    // Логируем количество цитат
     Log.d("QuoteListScreen", "Количество цитат: ${quotes.size}")
     LazyColumn(modifier = Modifier.padding(16.dp)) {
         itemsIndexed(quotes) { index, quote ->
