@@ -3,13 +3,11 @@ package com.example.titan7.data
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
-import com.example.titan7.domain.LogoResponse
 import com.example.titan7.domain.QuoteRepository
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
-import com.google.gson.JsonSyntaxException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,19 +24,20 @@ import okhttp3.WebSocketListener
 
 open class QuoteRepositoryImpl(private val okHttpClient: OkHttpClient) : QuoteRepository {
     private val gson = Gson()
-    private val datList = mutableListOf<Quote>()
+    private val datList = mutableListOf<Listing>()
     private val webSocketUrl = "wss://wss.tradernet.com"
     private val tickersToWatchChanges = listOf("AFLT", "AAPL.US", "SP500.IDX", "AAPL.US")
+
 
     /**
      * Получаем котировки
      * Подписываемся на веб-сокет и возвращаем поток котировок.
      */
-    private val dataValue = MutableStateFlow<List<Quote>>(listOf())
-    private val logoValue = MutableStateFlow<List<Bitmap>>(listOf())
+    private val dataValue = MutableStateFlow<List<Listing>>(listOf())
 
     private fun startWebSocket() {
         val request = Request.Builder().url(webSocketUrl).build()
+        datList.clear()
         val webSocketListener = object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 val subscribeMessage =
@@ -80,17 +79,32 @@ open class QuoteRepositoryImpl(private val okHttpClient: OkHttpClient) : QuoteRe
         val response = gson.fromJson(data, WebResponse::class.java)
         Log.d("WebSocket", "Received quote: $response")
 
-        // Создаем список Quote из данных WebResponse
         val newQuote = response.mapToListing()
-        datList.add(newQuote)
-        dataValue.value = datList
 
-        // Получаем логотип для нового тикера
-        val logoUrl = getCompanyLogo(newQuote.name)
-        logoUrl?.let {
-            // Обновляем список логотипов
-            logoValue.value = logoValue.value + it // Добавляем полученный логотип в список логотипов
+        // Применяем логику замены или уникальности
+        val existingQuotes = datList.map { it.name }
+        // Предполагая, что у Quote есть поле "name"
+        if (!existingQuotes.contains(newQuote.name)) {
+            // Получаем логотип для нового тикера
+            val logoBitmap = newQuote.name?.let {
+                getCompanyLogo(it)
+            }
+
+            newQuote.logo = logoBitmap // Присваиваем иконку котировке
+
+            datList.add(newQuote)
+        } else {
+            // Обновляем существующую котировку
+            val index = existingQuotes.indexOf(newQuote.name)
+            if (index != -1) {
+                datList[index] = newQuote
+                // Обновляем иконку, если необходимо
+                datList[index].logo = newQuote.logo ?: datList[index].logo
+            }
         }
+
+        // Обновляем состояние
+        dataValue.value = datList.toList()
     }
 
     override suspend fun startSocket() {
@@ -99,7 +113,8 @@ open class QuoteRepositoryImpl(private val okHttpClient: OkHttpClient) : QuoteRe
 
     private suspend fun getCompanyLogo(ticker: String): Bitmap? {
         return withContext(Dispatchers.IO) {
-            val logoUrl = "https://tradernet.com/logos/get-logo-by-ticker?ticker=${ticker.lowercase()}"
+            val logoUrl =
+                "https://tradernet.com/logos/get-logo-by-ticker?ticker=${ticker.lowercase()}"
             val request = Request.Builder().url(logoUrl).build()
             val response: Response = okHttpClient.newCall(request).execute()
 
@@ -120,14 +135,15 @@ open class QuoteRepositoryImpl(private val okHttpClient: OkHttpClient) : QuoteRe
                     null
                 }
             } else {
-                Log.e("LogoRequest", "Failed to load logo for $ticker with status: ${response.code}")
+                Log.e(
+                    "LogoRequest",
+                    "Failed to load logo for $ticker with status: ${response.code}"
+                )
                 null
             }
         }
     }
 
-    override val updateDate: StateFlow<List<Quote>>
+    override val updateDate: StateFlow<List<Listing>>
         get() = dataValue.asStateFlow()
-    override val getCompanyLogo: StateFlow<List<Bitmap>>
-        get() = logoValue.asStateFlow()
 }

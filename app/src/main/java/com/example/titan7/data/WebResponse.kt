@@ -117,7 +117,7 @@ data class WebResponse(
     @SerializedName("pp")
     val pp: Double,
     @SerializedName("quote_basis")
-    val quoteBasis: String,
+    val quoteBasis: String = "UNKNOWN_SYMBOL" ,
     @SerializedName("rev")
     val rev: Int,
     @SerializedName("scheme_calc")
