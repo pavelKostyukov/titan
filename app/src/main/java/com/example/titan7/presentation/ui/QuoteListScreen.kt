@@ -21,7 +21,7 @@ fun QuoteListScreen(viewModel: QuoteViewModel) {
     Log.d("QuoteListScreen", "Количество цитат: ${quotes.size}")
     LazyColumn(modifier = Modifier.padding(16.dp)) {
         itemsIndexed(quotes) { index, quote ->
-            QuoteItem(quote) // Получаем соответствующий логотип
+            QuoteItem(quote)
             if (index < quotes.size - 1) {
                 Divider(color = Color.LightGray, thickness = 1.dp)
             }

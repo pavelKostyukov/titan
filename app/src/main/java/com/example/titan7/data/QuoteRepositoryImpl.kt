@@ -26,7 +26,42 @@ open class QuoteRepositoryImpl(private val okHttpClient: OkHttpClient) : QuoteRe
     private val gson = Gson()
     private val datList = mutableListOf<Listing>()
     private val webSocketUrl = "wss://wss.tradernet.com"
-    private val tickersToWatchChanges = listOf("AFLT", "AAPL.US", "SP500.IDX", "AAPL.US")
+    private val tickersToWatchChanges = listOf(
+        "AFLT",
+        "AAPL.US",
+        "SP500.IDX",
+        "AAPL.US",
+        "RSTI",
+        "GAZP",
+        "MRKZ",
+        "RUAL",
+        "HYDR",
+        "MRKS",
+        "SBER",
+        "FEES",
+        "TGKA",
+        "VTBR",
+        "ANH.US",
+        "VICL.US",
+        "RG.US",
+        "NBL.US",
+        "YETI.US",
+        "WSFS.US",
+        "NIO.US",
+        "DXC.US",
+        "MIC.US",
+        "HSBC.US",
+        "EXPN.EU",
+        "GSK.EU",
+        "SHP.EU",
+        "MAN.EU",
+        "DB1.EU",
+        "MUV2.EU",
+        "TATE.EU",
+        "KGF.EU",
+        "MGGT.EU",
+        "SGGD.EU"
+    )
 
 
     /**

@@ -1,11 +1,12 @@
 package com.example.titan7.data
 
+
 fun WebResponse.mapToListing() =
     Listing(
-        name = this.c,
-        symbol = this.quoteBasis?: "UNKNOWN_SYMBOL" ,          // Символ
-        price = this.chg,            // Текущая цена
-        change = this.ltp,          // Изменение цены
-        previousClose = this.p22, // Цена закрытия
-        exchange = this.bbt        // Биржа
+        name = this.c,              // Название бумаги
+        symbol = this.name?: "UNKNOWN_SYMBOL" ,//Изменение в процентах относительно цены закрытия
+        price = this.chg,           //Биржа последней сделки
+        change = this.ltp,         //Цена последней сделки
+        previousClose = this.p22,  //Цена последней сделки
+        exchange = this.pcp        //(Изменение цены последней сделки в пунктах относи
     )
