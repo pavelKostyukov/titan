@@ -26,7 +26,7 @@ fun QuoteItem(quote: Listing) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp), // Увеличен вертикальный отступ
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -36,14 +36,14 @@ fun QuoteItem(quote: Listing) {
                 bitmap = bitmap.asImageBitmap(),
                 contentDescription = "Logo for ${quote.name}",
                 modifier = Modifier
-                    .size(40.dp) // Размер логотипа
-                    .padding(end = 8.dp) // Отступ между логотипом и текстом
+                    .size(40.dp) // Размер логотипа - в тз нет figma - не указано
+                    .padding(end = 8.dp)
             )
         } ?: run {
             // Отображение заглушки, если логотип отсутствует
             Box(
                 modifier = Modifier
-                    .size(40.dp) // Размер заглушки
+                    .size(40.dp) // Размер заглушки -тот же
                     .background(Color.Gray)
                     .padding(end = 8.dp)
             )
@@ -53,13 +53,9 @@ fun QuoteItem(quote: Listing) {
             modifier = Modifier.weight(1f),
             horizontalAlignment = Alignment.Start
         ) {
-            // Большой текст (замена h6 на bodyLarge, чтобы соответствовать стилю)
             quote.name?.let { Text(text = it, style = MaterialTheme.typography.bodyLarge) }
-            // Серый маленький текст для обозначения символа
             quote.symbol?.let { Text(text = it, style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)) }
         }
-
-        // Дополнительная информация, выровненная по правому краю
         Column(
             horizontalAlignment = Alignment.End
         ) {
@@ -67,9 +63,8 @@ fun QuoteItem(quote: Listing) {
             Text(
                 text = "${quote.price}%",
                 color = if (quote.price < 0) Color.Red else Color.Green,
-                style = MaterialTheme.typography.bodyLarge // Большой шрифт
+                style = MaterialTheme.typography.bodyLarge
             )
-            // Мелкие тексты в ряд
             Row {
                 Text(
                     text = "${quote.exchange}",
