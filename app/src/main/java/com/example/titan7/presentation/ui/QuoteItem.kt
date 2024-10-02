@@ -53,8 +53,9 @@ fun QuoteItem(quote: Listing) {
             modifier = Modifier.weight(1f),
             horizontalAlignment = Alignment.Start
         ) {
-            quote.name?.let { Text(text = it, style = MaterialTheme.typography.bodyLarge) }
-            quote.symbol?.let { Text(text = it, style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)) }
+            // Проверка на null и вывод сообщения, если данных нет
+            Text(text = quote.name ?: "Ошибка получения катировки", style = MaterialTheme.typography.bodyLarge)
+            Text(text = quote.symbol ?: "Нет символа катировки", style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray))
         }
         Column(
             horizontalAlignment = Alignment.End

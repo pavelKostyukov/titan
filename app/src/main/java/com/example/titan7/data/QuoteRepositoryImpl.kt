@@ -81,15 +81,16 @@ open class QuoteRepositoryImpl(private val okHttpClient: OkHttpClient) : QuoteRe
                     val event = jelement[0].asString
                     if (event == "q") {
                         val data = jelement[1]
-                        // Вызываем здесь handleQuoteUpdate как suspend
                         CoroutineScope(Dispatchers.IO).launch {
                             handleQuoteUpdate(data)
                         }
                     }
+                } else {
+                    Log.e("WebSocket", "Unexpected message format: $text")
                 }
             }
 
-            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                 Log.e("WebSocket", "Error: ${t.message}")
             }
 
@@ -103,27 +104,34 @@ open class QuoteRepositoryImpl(private val okHttpClient: OkHttpClient) : QuoteRe
 
     // Зависимость от контекста корутин
     suspend fun handleQuoteUpdate(data: JsonElement) {
-        // Извлекаем данные из JSON объекта и преобразуем их в WebResponse
-        val response = gson.fromJson(data, WebResponse::class.java)
-        Log.d("WebSocket", "Received quote: $response")
+        try {
+            val response = gson.fromJson(data, WebResponse::class.java)
+            Log.d("WebSocket", "Received quote: $response")
 
-        val newQuote = response.mapToListing()
+            val newQuote = response.mapToListing()
+            if (newQuote == null) {
+                Log.e("WebSocket", "Failed to map response to Listing")
+                return
+            }
 
-        // Применяем логику замены или уникальности
-        newQuote.logo = newQuote.name?.let { getCompanyLogo(it) }
+            newQuote.logo = newQuote.name?.let { getCompanyLogo(it) }
 
-        //Обновляем список данных,
-        val existingIndex = datList.indexOfFirst { it.name == newQuote.name }
-        if (existingIndex == -1) {
-            // Добавляем котировку
-            datList.add(newQuote)
-        } else {
-            // Обновляем иконку, если необходимо
-            datList[existingIndex] = newQuote
+            synchronized(datList) {
+                val existingIndex = datList.indexOfFirst { it.name == newQuote.name }
+                if (existingIndex == -1) {
+                    datList.add(newQuote)
+                } else {
+                    datList[existingIndex] = newQuote
+                }
+            }
+
+            // Обновляем StateFlow на главном потоке
+            withContext(Dispatchers.Main) {
+                dataValue.value = datList.toList()
+            }
+        } catch (e: Exception) {
+            Log.e("WebSocket", "Ошибка при обработке данных: ${e.message}")
         }
-
-        // Обновляем состояние
-        dataValue.value = datList.toList()
     }
 
     private suspend fun getCompanyLogo(ticker: String): Bitmap? {
