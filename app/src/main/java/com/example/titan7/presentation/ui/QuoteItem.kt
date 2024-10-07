@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,44 +22,53 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.dp
 import com.example.titan7.data.Listing
 
+
 @Composable
 fun QuoteItem(quote: Listing) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.Top,
-        horizontalArrangement = Arrangement.SpaceBetween
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        // Отображение логотипа, если он доступен
-        quote.logo?.let { bitmap ->
-            Image(
-                bitmap = bitmap.asImageBitmap(),
-                contentDescription = "Logo for ${quote.name}",
-                modifier = Modifier
-                    .size(40.dp) // Размер логотипа - в тз нет figma - не указано
-                    .padding(end = 8.dp)
-            )
-        } ?: run {
-            // Отображение заглушки, если логотип отсутствует
-            Box(
-                modifier = Modifier
-                    .size(40.dp) // Размер заглушки -тот же
-                    .background(Color.Gray)
-                    .padding(end = 8.dp)
-            )
-        }
-
         Column(
             modifier = Modifier.weight(1f),
             horizontalAlignment = Alignment.Start
         ) {
-            // Проверка на null и вывод сообщения, если данных нет
-            Text(text = quote.name ?: "Ошибка получения катировки", style = MaterialTheme.typography.bodyLarge)
-            Text(text = quote.symbol ?: "Нет символа катировки", style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray))
+            Row {
+                // Отображение логотипа, если он доступен
+                quote.logo?.let { bitmap ->
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = "Logo for ${quote.name}",
+                        modifier = Modifier
+                            .size(24.dp) // Размер логотипа
+                    )
+                } ?: run {
+                    // Отображение заглушки, если логотип отсутствует
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp) // Размер заглушки тот же
+                            .background(Color.Gray, shape = RoundedCornerShape(4.dp))
+                    )
+                }
+                // Проверка на null и вывод сообщения, если данных нет
+                Text(
+                    text = quote.name ?: "Ошибка получения катировки",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(start = 8.dp) // Отступ слева
+                )
+            }
+
+            Text(
+                text = quote.symbol ?: "Нет символа катировки",
+                style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
+            )
         }
+        // Правая колонка с выравниванием по правому краю
         Column(
-            horizontalAlignment = Alignment.End
+            horizontalAlignment = Alignment.End,
+            modifier = Modifier.weight(1f) // Занять оставшееся пространство
         ) {
             // Процент с изменением цвета
             Text(
