@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="default_tickers">
+        <item>AFLT</item>
+        <item>AAPL.US</item>
+        <item>SP500.IDX</item>
+        <item>RSTI</item>
+        <item>GAZP</item>
+        <item>MRKZ</item>
+        <item>RUAL</item>
+        <item>HYDR</item>
+        <item>MRKS</item>
+        <item>SBER</item>
+        <item>FEES</item>
+        <item>TGKA</item>
+        <item>VTBR</item>
+        <item>ANH.US</item>
+        <item>VICL.US</item>
+        <item>RG.US</item>
+        <item>NBL.US</item>
+        <item>YETI.US</item>
+        <item>WSFS.US</item>
+        <item>NIO.US</item>
+        <item>DXC.US</item>
+        <item>MIC.US</item>
+        <item>HSBC.US</item>
+        <item>EXPN.EU</item>
+        <item>GSK.EU</item>
+        <item>SHP.EU</item>
+        <item>MAN.EU</item>
+        <item>DB1.EU</item>
+        <item>MUV2.EU</item>
+        <item>TATE.EU</item>
+        <item>KGF.EU</item>
+        <item>MGGT.EU</item>
+        <item>SGGD.EU</item>
+    </string-array>
+</resources>

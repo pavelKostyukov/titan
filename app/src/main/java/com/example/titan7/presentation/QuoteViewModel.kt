@@ -20,7 +20,6 @@ class QuoteViewModel(private val useCase: QuoteUseCase) : ViewModel() {
         viewModelScope.launch {
             useCase.updateDate().collect {
                 Log.d("ViewModel", "ViewModel${it}")
-                // Обновляем состояние
                 _quotes.value = it
             }
         }
