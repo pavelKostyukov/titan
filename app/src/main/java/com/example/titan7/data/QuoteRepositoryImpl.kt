@@ -20,17 +20,19 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
-import java.text.DecimalFormat
 
-open class QuoteRepositoryImpl(private val okHttpClient: OkHttpClient) : QuoteRepository {
+open class QuoteRepositoryImpl(
+    private val okHttpClient: OkHttpClient
+) : QuoteRepository {
+
     private val gson = Gson()
     private val datList = mutableListOf<Listing>()
-    val decimalFormat =
-        DecimalFormat("#.##") // Форматируем числа до двух знаков после запятой
-    val dataValue = MutableStateFlow<List<Listing>>(listOf())
+    private val _dataValue = MutableStateFlow<List<Listing>>(emptyList())
+    private var webSocket: WebSocket? = null
+    private val logoCache = mutableMapOf<String, Bitmap?>()
 
     private fun startWebSocket() {
-        val request = Request.Builder().url(Companion.webSocketUrl).build()
+        val request = Request.Builder().url(DEFAULT_WEBSOCKET_URL).build()
 
         val tickersToWatchChanges = listOf(
             "AFLT", "AAPL.US", "SP500.IDX", "RSTI", "GAZP",
@@ -42,37 +44,50 @@ open class QuoteRepositoryImpl(private val okHttpClient: OkHttpClient) : QuoteRe
             "KGF.EU", "MGGT.EU", "SGGD.EU"
         )
 
+
         val webSocketListener = object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
+                this@QuoteRepositoryImpl.webSocket = webSocket
                 subscribeToQuotes(webSocket, tickersToWatchChanges)
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
                 Log.d("WebSocket", "Received message: $text")
-                val jelement = JsonParser().parse(text)
-                if (jelement is JsonArray && jelement.size() > 1) {
-                    val event = jelement[0].asString
-                    if (event == "q") {
-                        val data = jelement[1]
-                        CoroutineScope(Dispatchers.IO).launch {
-                            handleQuoteUpdate(data)
-                        }
-                    }
-                } else {
-                    Log.e("WebSocket", "Unexpected message format: $text")
+                CoroutineScope(Dispatchers.Default).launch {
+                    processWebSocketMessage(text)
                 }
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                 Log.e("WebSocket", "Error: ${t.message}")
+                reconnectWebSocket()
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                 Log.d("WebSocket", "Connection closed: $reason")
+                reconnectWebSocket()
             }
         }
 
         okHttpClient.newWebSocket(request, webSocketListener)
+    }
+
+    companion object {
+        const val DEFAULT_WEBSOCKET_URL = "wss://wss.tradernet.com"
+        const val DEFAULT_LOGO_URL_TEMPLATE = "https://tradernet.com/logos/get-logo-by-ticker?ticker=%s"
+    }
+
+    private suspend fun processWebSocketMessage(text: String) {
+        val jelement = JsonParser().parse(text)
+        if (jelement is JsonArray && jelement.size() > 1) {
+            val event = jelement[0].asString
+            if (event == "q") {
+                val data = jelement[1]
+                handleQuoteUpdate(data)
+            }
+        } else {
+            Log.e("WebSocket", "Unexpected message format: $text")
+        }
     }
 
     private fun subscribeToQuotes(webSocket: WebSocket, tickers: List<String>) {
@@ -85,16 +100,18 @@ open class QuoteRepositoryImpl(private val okHttpClient: OkHttpClient) : QuoteRe
             val response = gson.fromJson(data, WebResponse::class.java)
             Log.d("WebSocket", "Received quote: $response")
 
-            val newQuote = response.mapToListing() ?: run {
-                Log.e("WebSocket", "Failed to map response to Listing")
-                return
+            val newQuote = response.mapToListing()
+            Log.d("Quote Update",
+                "Name: ${newQuote.name}, " +
+                        "Price: ${newQuote.formattedPrice}, " +
+                        "Change: ${newQuote.formattedChange}")
+            val logoBitmap = logoCache[newQuote.name] ?: newQuote.name?.let {
+                val logoFromNetwork = getCompanyLogo(it)
+                logoCache[newQuote.name] = logoFromNetwork
+                logoFromNetwork
             }
 
-            // Обновление существующих данных, если они уже есть
-            updateOrAddQuote(newQuote)
-
-            // Получаем логотип асинхронно
-            newQuote.logo = newQuote.name?.let { getCompanyLogo(it) }
+            updateOrAddQuote(newQuote.copy(logo = logoBitmap))
             updateStateFlow()
         } catch (e: Exception) {
             Log.e("WebSocket", "Error processing data: ${e.message}")
@@ -103,21 +120,31 @@ open class QuoteRepositoryImpl(private val okHttpClient: OkHttpClient) : QuoteRe
 
     private fun updateOrAddQuote(newQuote: Listing) {
         synchronized(datList) {
-            val existingQuoteIndex = datList.indexOfFirst { it.name == newQuote.name }
-            if (existingQuoteIndex != -1) {
-                // Обновляем данные существующей котировки
-                val existingQuote = datList[existingQuoteIndex]
-                existingQuote.updateFrom(newQuote) // Метод для обновления существующей котировки
+            val existingIndex = datList.indexOfFirst { it.name == newQuote.name }
+            if (existingIndex != -1) {
+                val existing = datList[existingIndex]
+                datList[existingIndex] = existing.updateFrom(newQuote)
             } else {
-                // Добавляем новую котировку
                 datList.add(newQuote)
             }
         }
     }
 
     private suspend fun updateStateFlow() {
+        val newList = synchronized(datList) { datList.toList() }
         withContext(Dispatchers.Main) {
-            dataValue.value = datList.toList()
+            _dataValue.value = newList
+        }
+    }
+
+    private fun reconnectWebSocket() {
+        CoroutineScope(Dispatchers.IO).launch {
+            kotlin.runCatching {
+                Log.d("WebSocket", "Attempting reconnect...")
+                startWebSocket()
+            }.onFailure {
+                Log.e("WebSocket", "Reconnect failed: ${it.message}")
+            }
         }
     }
 
@@ -126,45 +153,31 @@ open class QuoteRepositoryImpl(private val okHttpClient: OkHttpClient) : QuoteRe
     }
 
     override val updateDate: StateFlow<List<Listing>>
-        get() = dataValue.asStateFlow()
+        get() = _dataValue.asStateFlow()
 
-    suspend fun getCompanyLogo(ticker: String): Bitmap? {
+    private suspend fun getCompanyLogo(ticker: String): Bitmap? {
         return withContext(Dispatchers.IO) {
-            val logoUrl = Companion.logoUrlTemplate.format(ticker.lowercase())
-            val response = okHttpClient.newCall(Request.Builder().url(logoUrl).build()).execute()
+            try {
+                val logoUrl = DEFAULT_LOGO_URL_TEMPLATE.format(ticker.lowercase())
+                val response = okHttpClient.newCall(Request.Builder().url(logoUrl).build()).execute()
 
-            val contentType = response.header("Content-Type")
-            Log.d("LogoRequest", "Content-Type $ticker: $contentType")
-
-            if (response.isSuccessful && contentType?.startsWith("image/") == true) {
-                response.body?.byteStream()?.use { inputStream ->
-                    BitmapFactory.decodeStream(inputStream)
-                } ?: run {
-                    Log.e("LogoRequest", "Error processing logo for $ticker")
+                if (response.isSuccessful && response.header("Content-Type")?.startsWith("image/") == true) {
+                    response.body?.byteStream()?.use { BitmapFactory.decodeStream(it) }
+                } else {
                     null
                 }
-            } else {
-                Log.e("LogoRequest", "$ticker status: ${response.code}")
+            } catch (e: Exception) {
+                Log.e("LogoRequest", "Error for $ticker: ${e.message}")
                 null
             }
         }
     }
 
-    companion object {
-        private const val webSocketUrl = "wss://wss.tradernet.com"
-        private const val logoUrlTemplate = "https://tradernet.com/logos/get-logo-by-ticker?ticker=%s"
-    }
-
-    // Дополнительный класс или метод для обновления котировки
-    fun Listing.updateFrom(newData: Listing) {
-      //  this.value = newData.value // Например, обновляем значение
-        this.change = newData.change // Обновляем изменение
-        // Добавьте сюда любые другие поля, которые необходимо обновить
-    }
-
-    // Функция форматирования числа без экспоненциального формата
-    fun formatNumber(value: Double): String {
-        return decimalFormat.format(value)
+    private fun Listing.updateFrom(newData: Listing): Listing {
+        return this.copy(
+            change = newData.change,
+            symbol = newData.symbol ?: this.symbol,
+            logo = newData.logo ?: this.logo
+        )
     }
 }
-

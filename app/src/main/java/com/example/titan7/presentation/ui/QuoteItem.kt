@@ -37,21 +37,24 @@ fun QuoteItem(quote: Listing) {
         ) {
             Row {
                 // Отображение логотипа, если он доступен
-                quote.logo?.let { bitmap ->
-                    Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        contentDescription = "Logo for ${quote.name}",
-                        modifier = Modifier
-                            .size(24.dp) // Размер логотипа
-                    )
-                } ?: run {
-                    // Отображение заглушки, если логотип отсутствует
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp) // Размер заглушки тот же
-                            .background(Color.Gray, shape = RoundedCornerShape(4.dp))
-                    )
+                if (quote.hasLogo) {
+                    quote.logo?.let { bitmap ->
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = "Logo for ${quote.name}",
+                            modifier = Modifier
+                                .size(24.dp) // Размер логотипа
+                        )
+                    } ?: run {
+                        // Отображение заглушки, если логотип отсутствует
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp) // Размер заглушки тот же
+                                .background(Color.Gray, shape = RoundedCornerShape(4.dp))
+                        )
+                    }
                 }
+
                 // Проверка на null и вывод сообщения, если данных нет
                 Text(
                     text = quote.name ?: "Ошибка получения катировки",
@@ -78,7 +81,7 @@ fun QuoteItem(quote: Listing) {
             )
             Row {
                 Text(
-                    text = "${quote.exchange}",
+                    text = "${quote.change}",
                     style = MaterialTheme.typography.bodySmall.copy(color = Color.Black)
                 )
                 Spacer(modifier = Modifier.width(4.dp)) // Отступ между текстами
